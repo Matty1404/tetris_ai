@@ -62,9 +62,9 @@ class TetrisTrainer():
       if not broke:
         prev = 0
     if bumpiness == 0:
-      bumpiness = 0.01
+      bumpiness = 0.1
     if height == 0:
-      height = 0.01
+      height = 0.1
     return height, bumpiness
   
   def calculate_full_lines(self):
@@ -164,7 +164,7 @@ class TetrisTrainer():
           self.clear_rows()
           height, bumpiness = self.calculate_aggregate_height_and_bumpiness()
 
-          final_score += (1000 * cleared) + (1 / height) + (1 / bumpiness) 
+          final_score += (100000 * cleared) + (1 / height) + (1 / bumpiness) 
 
           # Generate a new random shape
           self.current_shape = self.next_shape
