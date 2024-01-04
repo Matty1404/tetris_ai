@@ -22,11 +22,12 @@ class FastTetrisTrainer():
     self.grid = [[0] * self.GRID_WIDTH for _ in range(self.GRID_HEIGHT)]
     self.next_shape = random.choice(self.SHAPES)
     self.current_shape = random.choice(self.SHAPES)
+    
     self.rotated = False
     self.current_x = self.GRID_WIDTH // 2
     self.current_y = 0
     self.score = 0
-        
+
     
   def calculate_aggregate_height_and_bumpiness(self):
     # want to minimise
@@ -59,6 +60,18 @@ class FastTetrisTrainer():
 
     return len(full_rows)
 
+  def calculate_shape_inputs_2(self, shape, rotated = False):
+    ret_arr = []
+    
+    ret_arr.append
+    
+    if rotated:
+      ret_arr.append(1)
+    else:
+      ret_arr.append(0)
+    
+    return ret_arr
+
   def calculate_shape_inputs(self, shape, rotated = False):
     shape = np.array(shape)
     if rotated:
@@ -67,8 +80,13 @@ class FastTetrisTrainer():
     padded_matrix = np.pad(shape, ((0, 4-shape.shape[0]), (0, 4-shape.shape[1])), 'constant')
     return padded_matrix.flatten().tolist()
 
-
-
+  def calculate_holes(self):
+    holes = 0
+    for i in range (self.GRID_WIDTH):
+      for j in range(1, self.GRID_HEIGHT):
+        if self.grid[j][i] == 0 and self.grid[j - 1][i] != 0:
+          holes += 1
+    return holes
 
   def play_tetris(self):
     
@@ -116,8 +134,8 @@ class FastTetrisTrainer():
           cleared = self.calculate_full_lines()
           self.clear_rows()
           height, bumpiness = self.calculate_aggregate_height_and_bumpiness()
-
-          final_score += (100000 * cleared) + (1 / height) + (1 / bumpiness) 
+          holes = self.calculate_holes()
+          final_score += (100000 * cleared) + (1 / (0.1 * height)) + (1 / (4 * holes))
 
           # Generate a new random shape
           self.current_shape = self.next_shape
@@ -169,7 +187,7 @@ class FastTetrisTrainer():
 
 def cross_and_mutate(num_tournaments, top_n):
     
-  tournament_size = 6 #TODO change
+  tournament_size = 4 
   new_ais = []
   print("HOLDING TOURNAMENT")
   def tournament_selection(population, tournament_size):
@@ -203,50 +221,47 @@ def cross_and_mutate(num_tournaments, top_n):
   assert (num_tournaments == len(new_ais))
   return new_ais
 
-def run_tetris_instance(ai, result_queue, id):
+def run_tetris_instance(ai, id):
   print("running instance")
   score = FastTetrisTrainer(ai).play_tetris()
   print(score)
-  result_queue.put((score, id))
+  return (score, id)
+
 
 if __name__ == "__main__":
   ai_instances = [Smart_AI() for _ in range(90)] 
   best_10 = [Smart_AI() for _ in range(10)] 
   all_ai = best_10 + ai_instances
-
-  for i in range(1000): 
-    processes = []
-    
-    
-    result_queue = multiprocessing.Queue()
-    for id, ai in enumerate(best_10):
-      process = multiprocessing.Process(target=run_tetris_instance, args=(ai,result_queue, id))
-      processes.append((process))
-      process.start()
-    for id, ai in enumerate(ai_instances):
-      print(ai)
-      process = multiprocessing.Process(target=run_tetris_instance, args=(ai,result_queue, id + 10))
-      processes.append((process))
-      process.start()
-
-    for process in processes:
-      process.join()
+  
+  for i in range(10000): 
+    print("iteration ", i)
     results = []
-    while not result_queue.empty():
-      result, id = result_queue.get()
-      print(result, id)
-      results.append((result, all_ai[id]))
+    
+    
+    for ai in all_ai:
+      score = FastTetrisTrainer(ai).play_tetris()
+      print(score)
+      results.append((score, ai))
+
+    
+    
+    
+      
+      
+    
     results.sort(reverse=True)
     print(results)
-    new_population = results[:10] 
+    new_population = results[:10]
     ai_instances = cross_and_mutate(90, new_population) 
     best_10 = list(map(lambda x: x[1], new_population))
+    all_ai = best_10 + ai_instances
   
   
   for index, ai in enumerate(best_10):
     with open("genomes.txt", "w") as f:
-      f.write("---------------- seperator ----------------------\n\n")
-      f.write(ai.genome)
+      f.write("\n\n---------------- seperator ----------------------\n\n")
+      for gene in ai.genome:
+        f.write(str(gene) + ", ")
 
   Tetris(best_10[0]).play_tetris()
   

@@ -43,16 +43,21 @@ class Tetris():
     self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
     
     
-  def calculate_aggregate_height_and_bumpiness(self):
+  def calculate_aggregate_height_and_bumpiness_and_holes(self):
     # want to minimise
     prev = -1
-    score = 0
+    height = 0
     bumpiness = 0
+    holes = 0
     for i in range (0, self.GRID_WIDTH):
       broke = False
       for j in range(0, self.GRID_HEIGHT):
+        
+        if self.grid[j][i] == 0 and  j - 1 >= 0 and self.grid[j - 1][i] != 0:
+          holes += 1
+        
         if self.grid[j][i] != 0:
-          score += (self.GRID_HEIGHT - j)
+          height += (self.GRID_HEIGHT - j)
           broke = True
           if prev != -1:
             bumpiness += abs(prev - (self.GRID_HEIGHT - j))
@@ -60,7 +65,11 @@ class Tetris():
           break
       if not broke:
         prev = 0
-    return score, bumpiness
+    if bumpiness == 0:
+      bumpiness = 0.1
+    if height == 0:
+      height = 0.1
+    return height, bumpiness, holes
   
   def calculate_full_lines(self):
     full_rows = []
@@ -72,14 +81,19 @@ class Tetris():
 
   def calculate_shape_inputs(self, shape, rotated = False):
     shape = np.array(shape)
-    ret_arr = []
     if rotated:
       shape = shape.T
     
     padded_matrix = np.pad(shape, ((0, 4-shape.shape[0]), (0, 4-shape.shape[1])), 'constant')
     return padded_matrix.flatten().tolist()
 
-
+  def calculate_holes(self):
+    holes = 0
+    for i in range (self.GRID_WIDTH):
+      for j in range(1, self.GRID_HEIGHT):
+        if self.grid[j][i] == 0 and self.grid[j - 1][i] != 0:
+          holes += 1
+    return holes
 
 
   def play_tetris(self):
@@ -157,6 +171,8 @@ class Tetris():
                       self.grid[self.current_y + row][self.current_x + col] = self.current_shape[1]
 
           self.clear_rows()
+          holes = self.calculate_holes()
+          print(holes)
 
           # Generate a new random shape
           self.current_shape = self.next_shape
@@ -258,7 +274,7 @@ class Tetris():
 
 
 
-# Tetris().play_tetris()
+Tetris().play_tetris()
 # Tetris(Smart_AI()).play_tetris()
 # Tetris(RandomAI()).play_tetris()
 

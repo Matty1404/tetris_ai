@@ -318,7 +318,6 @@ if __name__ == "__main__":
       processes.append((process))
       process.start()
     for id, ai in enumerate(ai_instances):
-      print(ai)
       process = multiprocessing.Process(target=run_tetris_instance, args=(ai,result_queue, id + 10)) #TODO change
       processes.append((process))
       process.start()
