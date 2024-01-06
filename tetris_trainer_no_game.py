@@ -19,16 +19,16 @@ class FastTetrisTrainer():
         ([[0, 1, 1], [1, 1, 0]], 7),
         ([[1, 1, 0], [0, 1, 1]], 8),
     ]
+    random.seed(10)
     self.grid = [[0] * self.GRID_WIDTH for _ in range(self.GRID_HEIGHT)]
     self.next_shape = random.choice(self.SHAPES)
     self.current_shape = random.choice(self.SHAPES)
-    
     self.rotated = False
     self.current_x = self.GRID_WIDTH // 2
     self.current_y = 0
     self.score = 0
-
-    
+        
+  
   def calculate_aggregate_height_and_bumpiness(self):
     # want to minimise
     prev = -1
@@ -60,10 +60,10 @@ class FastTetrisTrainer():
 
     return len(full_rows)
 
-  def calculate_shape_inputs_2(self, shape, rotated = False):
+  def calculate_shape_inputs_2(self, shape_num, rotated = False):
     ret_arr = []
     
-    ret_arr.append
+    ret_arr.append(shape_num)
     
     if rotated:
       ret_arr.append(1)
@@ -101,8 +101,8 @@ class FastTetrisTrainer():
         inputs = self.grid
         flattened_list = [item for sublist in inputs for item in sublist]
         
-        flattened_list.extend(self.calculate_shape_inputs(self.current_shape[0], rotated=self.rotated))
-        flattened_list.extend(self.calculate_shape_inputs(self.next_shape[0]))
+        flattened_list.extend(self.calculate_shape_inputs_2(self.current_shape[1], rotated=self.rotated))
+        flattened_list.extend(self.calculate_shape_inputs_2(self.next_shape[1]))
         
         
         move = self.AI.choose_move(flattened_list)
@@ -135,6 +135,8 @@ class FastTetrisTrainer():
           self.clear_rows()
           height, bumpiness = self.calculate_aggregate_height_and_bumpiness()
           holes = self.calculate_holes()
+          if holes == 0:
+            holes = 0.25
           final_score += (100000 * cleared) + (1 / (0.1 * height)) + (1 / (4 * holes))
 
           # Generate a new random shape
@@ -233,7 +235,7 @@ if __name__ == "__main__":
   best_10 = [Smart_AI() for _ in range(10)] 
   all_ai = best_10 + ai_instances
   
-  for i in range(10000): 
+  for i in range(100000): 
     print("iteration ", i)
     results = []
     
@@ -247,21 +249,23 @@ if __name__ == "__main__":
     
     
       
-      
     
-    results.sort(reverse=True)
+    results.sort(reverse=True, key=lambda x: x[0])
     print(results)
     new_population = results[:10]
     ai_instances = cross_and_mutate(90, new_population) 
     best_10 = list(map(lambda x: x[1], new_population))
     all_ai = best_10 + ai_instances
+    
+    if i % 100 == 0:
+      with open("genomes.txt", "w") as f:
+        for gene in best_10[0].genome:
+          f.write(str(gene) + ", ")
   
   
-  for index, ai in enumerate(best_10):
-    with open("genomes.txt", "w") as f:
-      f.write("\n\n---------------- seperator ----------------------\n\n")
-      for gene in ai.genome:
-        f.write(str(gene) + ", ")
+  with open("genomes.txt", "w") as f:
+    for gene in best_10[0].genome:
+      f.write(str(gene) + ", ")
 
   Tetris(best_10[0]).play_tetris()
   

@@ -16,6 +16,7 @@ class Tetris():
             7: pygame.Color(160, 32, 240, a=255),
             8: pygame.Color(255, 165, 0, a=255)
           }
+    random.seed(10)
     self.WIDTH, self.HEIGHT = 1000, 660
     self.GRID_SIZE = 30
     self.GRID_WIDTH, self.GRID_HEIGHT = 10, 22
@@ -79,6 +80,18 @@ class Tetris():
 
     return len(full_rows)
 
+  def calculate_shape_inputs_2(self, shape_num, rotated = False):
+    ret_arr = []
+    
+    ret_arr.append(shape_num)
+    
+    if rotated:
+      ret_arr.append(1)
+    else:
+      ret_arr.append(0)
+    
+    return ret_arr
+
   def calculate_shape_inputs(self, shape, rotated = False):
     shape = np.array(shape)
     if rotated:
@@ -140,8 +153,8 @@ class Tetris():
         
         flattened_list = [item for sublist in inputs for item in sublist]
         
-        flattened_list.extend(self.calculate_shape_inputs(self.current_shape[0], rotated=self.rotated))
-        flattened_list.extend(self.calculate_shape_inputs(self.next_shape[0]))
+        flattened_list.extend(self.calculate_shape_inputs_2(self.current_shape[1], rotated=self.rotated))
+        flattened_list.extend(self.calculate_shape_inputs_2(self.next_shape[1]))
         
         
         move = self.AI.choose_move(flattened_list)
@@ -273,8 +286,22 @@ class Tetris():
           self.score += 100 * len(full_rows)
 
 
+# create AI based on file
 
-Tetris().play_tetris()
-# Tetris(Smart_AI()).play_tetris()
-# Tetris(RandomAI()).play_tetris()
+def file_to_genome(filepath):
+  with open(filepath, "r") as f:
+    genome = []
+    genome_str = f.read()
+    for gene in genome_str.split(', '):
+      if gene != "":
+        genome.append(float(gene))
+    return genome
+
+# Tetris(Smart_AI(genome= file_to_genome("genomes.txt"))).play_tetris()
+
+
+# if __name__ == "main":
+# Tetris().play_tetris()
+  # Tetris(Smart_AI()).play_tetris()
+  # Tetris(RandomAI()).play_tetris()
 
