@@ -16,6 +16,7 @@ class Tetris():
             7: pygame.Color(160, 32, 240, a=255),
             8: pygame.Color(255, 165, 0, a=255)
           }
+    random.seed(10)
     self.WIDTH, self.HEIGHT = 1000, 660
     self.GRID_SIZE = 30
     self.GRID_WIDTH, self.GRID_HEIGHT = 10, 22
@@ -43,16 +44,21 @@ class Tetris():
     self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
     
     
-  def calculate_aggregate_height_and_bumpiness(self):
+  def calculate_aggregate_height_and_bumpiness_and_holes(self):
     # want to minimise
     prev = -1
-    score = 0
+    height = 0
     bumpiness = 0
+    holes = 0
     for i in range (0, self.GRID_WIDTH):
       broke = False
       for j in range(0, self.GRID_HEIGHT):
+        
+        if self.grid[j][i] == 0 and  j - 1 >= 0 and self.grid[j - 1][i] != 0:
+          holes += 1
+        
         if self.grid[j][i] != 0:
-          score += (self.GRID_HEIGHT - j)
+          height += (self.GRID_HEIGHT - j)
           broke = True
           if prev != -1:
             bumpiness += abs(prev - (self.GRID_HEIGHT - j))
@@ -60,7 +66,11 @@ class Tetris():
           break
       if not broke:
         prev = 0
-    return score, bumpiness
+    if bumpiness == 0:
+      bumpiness = 0.1
+    if height == 0:
+      height = 0.1
+    return height, bumpiness, holes
   
   def calculate_full_lines(self):
     full_rows = []
@@ -70,16 +80,33 @@ class Tetris():
 
     return len(full_rows)
 
+  def calculate_shape_inputs_2(self, shape_num, rotated = False):
+    ret_arr = []
+    
+    ret_arr.append(shape_num)
+    
+    if rotated:
+      ret_arr.append(1)
+    else:
+      ret_arr.append(0)
+    
+    return ret_arr
+
   def calculate_shape_inputs(self, shape, rotated = False):
     shape = np.array(shape)
-    ret_arr = []
     if rotated:
       shape = shape.T
     
     padded_matrix = np.pad(shape, ((0, 4-shape.shape[0]), (0, 4-shape.shape[1])), 'constant')
     return padded_matrix.flatten().tolist()
 
-
+  def calculate_holes(self):
+    holes = 0
+    for i in range (self.GRID_WIDTH):
+      for j in range(1, self.GRID_HEIGHT):
+        if self.grid[j][i] == 0 and self.grid[j - 1][i] != 0:
+          holes += 1
+    return holes
 
 
   def play_tetris(self):
@@ -126,8 +153,8 @@ class Tetris():
         
         flattened_list = [item for sublist in inputs for item in sublist]
         
-        flattened_list.extend(self.calculate_shape_inputs(self.current_shape[0], rotated=self.rotated))
-        flattened_list.extend(self.calculate_shape_inputs(self.next_shape[0]))
+        flattened_list.extend(self.calculate_shape_inputs_2(self.current_shape[1], rotated=self.rotated))
+        flattened_list.extend(self.calculate_shape_inputs_2(self.next_shape[1]))
         
         
         move = self.AI.choose_move(flattened_list)
@@ -157,6 +184,8 @@ class Tetris():
                       self.grid[self.current_y + row][self.current_x + col] = self.current_shape[1]
 
           self.clear_rows()
+          holes = self.calculate_holes()
+          print(holes)
 
           # Generate a new random shape
           self.current_shape = self.next_shape
@@ -257,8 +286,22 @@ class Tetris():
           self.score += 100 * len(full_rows)
 
 
+# create AI based on file
 
+def file_to_genome(filepath):
+  with open(filepath, "r") as f:
+    genome = []
+    genome_str = f.read()
+    for gene in genome_str.split(', '):
+      if gene != "":
+        genome.append(float(gene))
+    return genome
+
+# Tetris(Smart_AI(genome= file_to_genome("genomes.txt"))).play_tetris()
+
+
+# if __name__ == "main":
 # Tetris().play_tetris()
-# Tetris(Smart_AI()).play_tetris()
-# Tetris(RandomAI()).play_tetris()
+  # Tetris(Smart_AI()).play_tetris()
+  # Tetris(RandomAI()).play_tetris()
 

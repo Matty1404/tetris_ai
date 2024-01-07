@@ -49,7 +49,8 @@ class TetrisNeuralNetwork(nn.Module):
     # Check if the genome has the correct number of weights
     total_params = sum(p.numel() for p in self.parameters())
     if len(genome) != total_params:
-        raise ValueError("Genome size does not match the network's total parameters.")
+      print("expected", total_params, "got:", len(genome))
+      raise ValueError("Genome size does not match the network's total parameters.")
     
     # Counter for tracking the position in the genome
     genome_index = 0
@@ -127,31 +128,43 @@ class TetrisNeuralNetwork(nn.Module):
     genome_index += layer_bias.numel()
 
 
-
 class Smart_AI(TetrisAI):
   
   
   def __init__(self, genome = None, genome_2 = None):
     self.genome = genome
     if genome is None:
-      self.genome = [random.uniform(-1,1) for _ in range(699492)]
+      self.genome = [random.uniform(-1,1) for _ in range(692324)]
     elif genome_2 is not None:
       # cross over and mutate
-      for i in range(len(genome)):
-        if random.randint(0,1) == 1:
-          self.genome[i] = genome_2[i]
-        self.genome[i] += random.uniform(-0.15, 0.15)
+      i = 0
+      CONSECUTUVE_VALS = 5000
+      while i < len(genome):
+        rand_val = random.randint(0,1)
+        count = 0
+        while count < CONSECUTUVE_VALS and count + i < len(genome):
+          if rand_val == 1:
+            self.genome[i + count] = genome_2[i + count]
+          self.genome[i + count] += random.uniform(-0.15, 0.15)
+          count += 1
+          
+        i += CONSECUTUVE_VALS
+        
     
-    self.nn = TetrisNeuralNetwork(252, 256, 256, 512, 512, 256, 128, 64, 32, 4, genome = self.genome)
+    self.nn = TetrisNeuralNetwork(224, 256, 256, 512, 512, 256, 128, 64, 32, 4, genome = self.genome)
   
   
   
   def choose_move(self, inputs = None):
     input_list = inputs
-    if len(input_list) != 252:
+    # before was 252 from  220, 16, 16
+    
+    # now 
+    # 220 + 2 + 2
+    if len(input_list) != 224:
       raise ValueError("Not big enough inputs]")
     if inputs is None:
-      input_list = [random.randint(0,1) for _ in range(252)]
+      input_list = [random.randint(0,1) for _ in range(224)]
     tlist = torch.Tensor(input_list)
     # print(self.nn.forward(tlist))
     selection = self.nn.forward(tlist).tolist()
